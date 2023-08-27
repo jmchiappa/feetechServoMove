@@ -117,14 +117,19 @@ void FTServoMove::stop(void) {
 }
 
 void FTServoMove::Affinage_Deceleration(void) {
+  int toto1;
+  int toto2;
 
   servo_->setTargetVelocity(IdServoMoteur_, 4000, false);
   delay(3000);
   servo_->setTargetVelocity(IdServoMoteur_, 0, false);
-  DBPRINTLN("Position Stop : ",servo_->getCurrentPosition(IdServoMoteur_));
+  toto1 = servo_->getCurrentPosition(IdServoMoteur_);
+  DBPRINTLN("Position Stop : ",toto1);
   while (servo_->isMoving(IdServoMoteur_) == true);
   delay(1000);
-  DBPRINTLN("Position arret : ", servo_->getCurrentPosition(IdServoMoteur_));
+  toto2 = servo_->getCurrentPosition(IdServoMoteur_);
+  DBPRINTLN("Position arret : ", toto2);
+  DBPRINTLN("Delta : ", (toto2-toto1));
 }
 
 bool FTServoMove::estIlEnRoute(void) {

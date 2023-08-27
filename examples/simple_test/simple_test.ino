@@ -9,7 +9,7 @@
 #include "STSServoDriver.h"
 #include "FTservoMove.h"
 
-#define NB_PAS_DEMI_TOUR 4650
+#define NB_PAS_DEMI_TOUR 4540
 #define NB_PAS_1M 10000
 
 #define INDEX_MOTEUR_DROITE   1
@@ -30,8 +30,8 @@ void setup() {
   //Serial.println("début setup...");
   busFTUART.init(NC, &COMserie);
   //Serial.println("init ftservomove ...");
-  moteurDroite.init(4000 , 100, 895);
-  moteurGauche.init(4000 , 100, 892);
+  moteurDroite.init(4000 , 40, 2070);
+  moteurGauche.init(4000 , 40, 2070);
   //Serial.println("fin setup");
 }
 
@@ -57,12 +57,9 @@ void loop() {
   moteurDroite.parcoursCetteDistance(NB_PAS_DEMI_TOUR);
   moteurGauche.parcoursCetteDistance(NB_PAS_DEMI_TOUR);
 
-  attenteFinDeplacement();
-
-  moteurDroite.parcoursCetteDistance(-NB_PAS_1M);
-  moteurGauche.parcoursCetteDistance(NB_PAS_1M);
 
   attenteFinDeplacement();
+
 
   //while (true);
 
