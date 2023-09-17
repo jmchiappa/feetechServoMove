@@ -9,10 +9,15 @@
 #ifndef __FTSERVOMOVE_H__
 #define __FTSERVOMOVE_H__
 
+#include "Arduino.h"
 #include <STSServoDriver.h>
-#include "chronos.h"
+#include "stm32wbxx_hal_lptim.h"
+#include "stm32wbxx_ll_lptim.h"
+
 
 #define POLLING_DELAY   10 // ms
+
+#define LPTIM_INSTANCE    LPTIM1
 
 class FTServoMove
 {
@@ -50,7 +55,7 @@ class FTServoMove
         }
 
         static void callbackManager(FTServoMove *servo);
-        static void callback(void);
+        // static void callback(void);
 
         /// \brief 
         /// Met le moteur en mode “continue”
@@ -64,6 +69,8 @@ class FTServoMove
         void init(int32_t Vitesse, uint32_t Acceleration, uint32_t NbPasDeceleration);
 
         void calageStart (int32_t vitesseCalage);
+
+        uint32_t PositionCourante(void);
         
         void stop(void);
         

@@ -1,0 +1,1 @@
+#define HAL_LPTIM_MODULE_ENABLED
