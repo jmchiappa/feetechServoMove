@@ -1,15 +1,13 @@
 #include "FTservoMove.h"
-#include <list>
 
 #define DBG
 #if defined(DBG)
 #   define DBHEADER Serial.print(String("FTServoMove[")+String(IdServoMoteur_)+String("]:"));
 #   define COURBE Serial.print("\v Toto:")
 #   define DBPRINT(a,b) {DBHEADER;Serial.print(a);Serial.print(":");Serial.print(b);}
-#   define DBPRINT1LN(a) Serial.println(a);
+#   define DBPRINT1LN(a) DBHEADER;Serial.println(a);
 #   define DBPRINTLN(a,b) DBHEADER;Serial.print(a);Serial.print(":");Serial.println(b,DEC);
 #   define COURBEPRINTLN(a) COURBE;Serial.println(a,DEC);
-#   define PIN_DEBUG  D0
 #else
 #   define DBHEADER {}
 #   define DBPRINT(a,b) {}
@@ -17,13 +15,14 @@
 #   define DBPRINTLN(a,b,FORMAT) {}
 #endif
 
+#define PIN_DEBUG  LED_BLUE // BLUE LED
+bool toggle = false;
+
 namespace STS::parameter {
     const uint16_t COMPTEUR_MAX = 4096;
-    const uint16_t VALEUR_MAX_PETITE_DISTANCE = 10000;
+    const uint16_t VALEUR_MAX_PETITE_DISTANCE = 27000;
     const uint8_t  NB_IT_DEMARRAGE = 10;
 }
-
-// std::list<FTServoMove *> obj;
 
 FTServoMove *obj[10];
 LPTIM_HandleTypeDef hlptim1;
@@ -43,17 +42,15 @@ extern "C" void LPTIM1_IRQHandler(void)
 }
 
 extern "C" void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim) {
+  // Timer callback
+  if(toggle) digitalToggle( PIN_DEBUG );
+  toggle = !toggle;
 
-#ifdef DBG
-  digitalToggle( PIN_DEBUG );
-#endif  
   for( uint8_t i=0; i<10; i++) {
-    if(obj[i]!=NULL) {
-      // Serial.print("calling id : ");
-      // Serial.println(obj[i]->getId());
-      obj[i]->Avance_Recule_callback();
+      if(obj[i]!=NULL) {
+        obj[i]->Avance_Recule_callback();
+      }
     }
-  }
 }
 
 void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* hlptim)
@@ -68,8 +65,8 @@ void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* hlptim)
       Error_Handler();
     }
 
-    /* Peripheral clock enable */
-    __HAL_RCC_LPTIM1_CLK_ENABLE();
+  /* Peripheral clock enable */
+   __HAL_RCC_LPTIM1_CLK_ENABLE();
 
   /* ## - 2 - Force & Release the LPTIM Periheral Clock Reset ############### */  
   /* Force the LPTIM Peripheral Clock Reset */
@@ -85,33 +82,16 @@ void HAL_LPTIM_MspInit(LPTIM_HandleTypeDef* hlptim)
 }
 
 /**
- * callback from timer interrupt. calls all objects in the list
-*/
-// void FTServoMove::callback() {
-  // poller.reset();
-  // poller.attachInterrupt(POLLING_DELAY, callback );
-  // Serial.println("callback IT");
-
-
-
-  // for (std::list<FTServoMove *>::iterator it = obj.begin(); it != obj.end(); ++it){
-  //     Serial.print("calling id : ");
-  //     Serial.println((*it)->getId());
-  //     (*it)->Avance_Recule_callback();
-  // }
-  // Serial.println("end of callback");
-// }
-
-/**
- * this static function aism to manage chrono calback which fires period interrupt
+ * this static function aims to manage callback which fires period interrupt
  * Calling this static memeber will subscribe the object to the poller.
  * if the poller is not running, start it.
 */
 void FTServoMove::callbackManager(FTServoMove *servo) {
   if(timerisRunning == false ) {
-#ifdef DEBUG    
+    // Power on blue LED for debug
     pinMode( PIN_DEBUG, OUTPUT );
-#endif
+    digitalWrite( PIN_DEBUG, HIGH );
+
     timerisRunning = true;
     hlptim1.Instance = LPTIM_INSTANCE;
     hlptim1.Init.Clock.Source = LPTIM_CLOCKSOURCE_APBCLOCK_LPOSC;
@@ -127,26 +107,13 @@ void FTServoMove::callbackManager(FTServoMove *servo) {
       Error_Handler();
     }
 
-    // LPTIM_TypeDef *Instance = LPTIM1;
-    // HardwareTimer *MyTim = new HardwareTimer(Instance);
-    // MyTim->setMode (1, TIMER_OUTPUT_COMPARE_ACTIVE);
-    // MyTim->setOverflow(20000, MICROSEC_FORMAT);
-    // MyTim->attachInterrupt(callback);
-
-    // clean the obj array
-    
+    // Clean the FTservo obj array
     for(uint8_t i=0;i<10;i++) obj[i] = NULL;
 
-    // Serial.println("Active le chronomètre");
-    // poller.attachInterrupt(POLLING_DELAY, callback );
-    // poller.start(true);
     uint32_t ARR_RegisterValue = 32000000 * POLLING_DELAY / (128 * 1000) -1;
     HAL_LPTIM_Counter_Start_IT( &hlptim1,ARR_RegisterValue);
-    // MyTim->resume();
   }
 
-  Serial.print("enregistre l'objet d'index ");
-  Serial.println(servo->getId());
   obj[obj_ptr++]= servo;
 }
 
@@ -155,33 +122,43 @@ void FTServoMove::init(int32_t Vitesse, uint32_t Acceleration, uint32_t NbPasDec
     VitesseNominale_ = Vitesse;
     Acceleration_ = Acceleration;
     NbPasDeceleration_ = NbPasDeceleration;
-    DBPRINT1LN("init::Début initialisation...");
-    servo_->setOperationMode(IdServoMoteur_ , STS::mode::CONTINUOUS);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-    delay(1);
+    servo_->setOperationMode(IdServoMoteur_ , STS::mode::CONTINUOUS); delay(1);
+    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
     servo_->setTargetVelocity(IdServoMoteur_, 0, false);
     callbackManager(this);
     DBPRINT1LN("init::initialisation terminée.");
 }
 
+
+void FTServoMove::reset_PositionAbsolue(void)
+{
+    NbPasAbsolu_ = 0;
+    NbTourAbsolu_ = 0;
+}
+
+int32_t FTServoMove::get_PositionAbsolue(void)
+{
+    return (NbTourAbsolu_ * STS::parameter::COMPTEUR_MAX + NbPasAbsolu_); 
+}
+
+void FTServoMove::changeSpeed (int32_t vitesseNouvelle) {
+    DBPRINT1LN("changeSpeed::Début...");
+    VitesseNominale_ = vitesseNouvelle;
+    servo_->setTargetVelocity(IdServoMoteur_, vitesseNouvelle, false); delay(1);
+}
+
 void FTServoMove::calageStart (int32_t vitesseCalage) {
     DBPRINT1LN("calageStart::Début calage...");
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_,false);
-    delay(1);
-    servo_->setTargetVelocity(IdServoMoteur_, vitesseCalage, false);
-    delay(1);
+    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_,false); delay(1);
+    servo_->setTargetVelocity(IdServoMoteur_, vitesseCalage, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_CALAGE;
 }
 
 void FTServoMove::stop(void) {
     DBPRINT1LN("stop::stop.");
-    servo_->setTargetVelocity(IdServoMoteur_, 0 , false);
-    delay(1);
-    while (servo_->isMoving(IdServoMoteur_) == true);
-    while (servo_->isMoving(IdServoMoteur_) == true);
+    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    servo_->setTargetVelocity(IdServoMoteur_, 0, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_STOP;
 }
 
@@ -206,10 +183,16 @@ uint32_t FTServoMove::PositionCourante(void)
   return (servo_->getCurrentPosition(IdServoMoteur_));
 }
 
-
 bool FTServoMove::estIlEnRoute(void) {
     // DBPRINTLN("leMoteurEstIlEnRoute : ",EtatMoteur_ != ETAT_MOTEUR_STOP);
-    return EtatMoteur_ != ETAT_MOTEUR_STOP;
+    if (EtatMoteur_ == ETAT_MOTEUR_STOP)
+    {
+      return (false);
+    }
+    else
+    {
+      return (true);
+    }
 }
 
 void FTServoMove::parcoursCetteDistance (int32_t NbPas) {
@@ -220,8 +203,8 @@ void FTServoMove::parcoursCetteDistance (int32_t NbPas) {
   if (abs(NbPas) <= STS::parameter::VALEUR_MAX_PETITE_DISTANCE) {
     Avance_Recule_PetitDistance( NbPas);
   } else {
-    X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);
-    delay(1);
+    DBPRINTLN("::::::::::::: Parcours Grand distance",IdServoMoteur_);
+    X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_); delay(1);
     if (X_DeDepart == 0){
       X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);
     }
@@ -264,91 +247,72 @@ void FTServoMove::parcoursCetteDistance (int32_t NbPas) {
     PositionMoteur_Courante_ = X_DeDepart;
     NbItDemarageMode_ = 0;
     EtatMoteur_ = ETAT_MOTEUR_DEMARAGE_CONTINUE;
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
-    delay(1);
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-    delay(1);
-    servo_->setTargetVelocity(IdServoMoteur_, Vitesse_A_Programmer, false);
-    delay(1);
-    servo_->setTargetVelocity(IdServoMoteur_, Vitesse_A_Programmer, false);
-    delay(1);
+    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
+    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
+    servo_->setTargetVelocity(IdServoMoteur_, Vitesse_A_Programmer, false); delay(1);
+    servo_->setTargetVelocity(IdServoMoteur_, Vitesse_A_Programmer, false); delay(1);
   }
 }
 
 void FTServoMove::Avance_Recule_PetitDistance(int32_t NbPas) {
-    
-   int Position_Finale;
-   int Position_Finale_A_Programmer_Mode_Continue;
-   int X_DeDepart;
+  int X_DeDepart;
+  int Position_Finale; 
 
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::POSITION);
-    delay(1);
-     servo_->setOperationMode(IdServoMoteur_, STS::mode::POSITION);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-    delay(1);
-    servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-    delay(1);
+  servo_->setOperationMode(IdServoMoteur_, STS::mode::POSITION); delay(1);
+  servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
+  X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);delay(1);
+  if (X_DeDepart == 0){
     X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);
-    delay(1);
-    if (X_DeDepart == 0){
-      X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);
-    }
-    delay(1);
-    if (X_DeDepart == 0){
-      X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);
-    }
-    Position_Finale_A_Programmer_Mode_Continue = X_DeDepart + NbPas;
-    Position_Finale = X_DeDepart + NbPas;
-    if (Position_Finale_A_Programmer_Mode_Continue < 0) {
-        Position_Finale = STS::parameter::COMPTEUR_MAX + Position_Finale_A_Programmer_Mode_Continue;
-    }
-    if (Position_Finale_A_Programmer_Mode_Continue >= STS::parameter::COMPTEUR_MAX) {
-        Position_Finale = Position_Finale_A_Programmer_Mode_Continue - STS::parameter::COMPTEUR_MAX;
-    }
-    NbItDemarageMode_ = 0;
-    EtatMoteur_ = ETAT_MOTEUR_DEMARAGE_POSITION;
-    servo_->setTargetPosition(IdServoMoteur_, Position_Finale_A_Programmer_Mode_Continue, false);
+  }
+  //DBPRINTLN("Avance_Recule_PetitDistance : NbPas",(int) NbPas);   
+  //DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart",(int) X_DeDepart);   
+  Position_Finale = X_DeDepart + NbPas;
+  NbPasTarget_ = NbPas;
+
+  if (NbPas >= 0) {
+      Avance_Recule_ = ROBOT_AVANCE;
+      PositionMoteur_Target_Finale_ = Position_Finale % STS::parameter::COMPTEUR_MAX;
+      NbTours_A_Parcourir_ = (abs(NbPas / STS::parameter::COMPTEUR_MAX));
+    } else {
+      Avance_Recule_ = ROBOT_RECULE;
+      PositionMoteur_Target_Finale_ = STS::parameter::COMPTEUR_MAX + Position_Finale % STS::parameter::COMPTEUR_MAX;
+      NbTours_A_Parcourir_ = (abs(NbPas / STS::parameter::COMPTEUR_MAX));
+    } 
+     
+  NbItDemarageMode_ = 0;
+  EtatMoteur_ = ETAT_MOTEUR_DEMARAGE_POSITION;
+  servo_->setTargetPosition(IdServoMoteur_, Position_Finale, false);
 }
 
 void FTServoMove::Avance_Recule_callback() {
   // DBPRINT1LN(F("entering in IT callback"));
   int v_it_PositionMoteurCourante;
-
   
   if (EtatMoteur_ != ETAT_MOTEUR_STOP) {
     if (EtatMoteur_ == ETAT_MOTEUR_DEMARAGE_POSITION) {
       NbItDemarageMode_ ++;
-      //DBPRINTLN("ETAT_MOTEUR_DEMARAGE_POSITION - FIN : ",servo_->getCurrentPosition(IdServoMoteur_));
       if (NbItDemarageMode_ >= STS::parameter::NB_IT_DEMARRAGE){
+        // Le moteur doit maintenant être lancé - Message d'erreur sinon
         EtatMoteur_ = ETAT_MOTEUR_POSITION;
         if (servo_->isMoving(IdServoMoteur_) == 0) {
             DBPRINTLN("ETAT_MOTEUR_DEMARAGE_POSITION : Le moteur n'a pas démarré !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",servo_->getCurrentPosition(IdServoMoteur_));
         }
-        //DBPRINTLN("ETAT_MOTEUR_DEMARAGE_POSITION - FIN : ",servo_->getCurrentPosition(IdServoMoteur_));
       }
     } else {
       if (EtatMoteur_== ETAT_MOTEUR_POSITION) {
         if (servo_->isMoving(IdServoMoteur_) == 0) {
           delay(1);
           if (servo_->isMoving(IdServoMoteur_) == 0) {
-            DBPRINTLN("Avance_Recule_callback - Fin Mode position : ",servo_->getCurrentPosition(IdServoMoteur_));
-            delay(1);
-            servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
-            delay(1);
-            servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
-            delay(1);
-            servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false);
-            delay(1);
-            servo_->setTargetVelocity(IdServoMoteur_, 0, false);
-            delay(1);
-            servo_->setTargetVelocity(IdServoMoteur_, 0, false);
-            delay(1);
-            EtatMoteur_ = ETAT_MOTEUR_STOP;
+            //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
+            //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
+            NbPasAbsolu_ += NbPasTarget_;
+            //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position absolue: ", (int) NbPasAbsolu_);
+            if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 1){
+            DBPRINTLN("Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
+            }
+            stop();
             }
           }
         } else {

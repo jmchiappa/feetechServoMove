@@ -46,12 +46,15 @@ class FTServoMove
             Acceleration_ = 20;
             EtatMoteur_ = ETAT_MOTEUR_STOP;
             PositionMoteur_Target_Finale_ = 0;
+            NbPasTarget_ = 0;
             PositionMoteur_Target_Intermediaire_ = 0;
             PositionMoteur_Courante_ = 0;
             NbTours_A_Parcourir_ = 0;
             NbTours_Parcourus_ = 0;
             Avance_Recule_ = ROBOT_AVANCE;
             NbPasDeceleration_= 1050;
+            NbPasAbsolu_ = 0;
+            NbTourAbsolu_ = 0;
         }
 
         static void callbackManager(FTServoMove *servo);
@@ -70,6 +73,8 @@ class FTServoMove
 
         void calageStart (int32_t vitesseCalage);
 
+        void changeSpeed (int32_t vitesseNouvelle);
+
         uint32_t PositionCourante(void);
         
         void stop(void);
@@ -81,6 +86,10 @@ class FTServoMove
         void Avance_Recule_callback(void);
 
         void Affinage_Deceleration(void);
+
+        void reset_PositionAbsolue(void);
+
+        int32_t get_PositionAbsolue(void);
 
         uint8_t getId(void) { return IdServoMoteur_; }
     private:
@@ -95,10 +104,13 @@ class FTServoMove
         uint32_t PositionMoteur_Target_Finale_;
         uint32_t PositionMoteur_Target_Intermediaire_;
         uint32_t PositionMoteur_Courante_;
+        int32_t NbPasTarget_;
         uint8_t NbTours_A_Parcourir_;
         uint8_t NbTours_Parcourus_;
         direction_t Avance_Recule_;
         uint32_t NbPasDeceleration_;
         uint8_t NbItDemarageMode_;
+        int32_t NbPasAbsolu_;
+        int32_t NbTourAbsolu_;
 };
 #endif
