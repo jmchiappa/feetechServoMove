@@ -1,6 +1,6 @@
 #include "FTservoMove.h"
 
-#define DBG
+// #define DBG
 #if defined(DBG)
 #   define DBHEADER Serial.print(String("FTServoMove[")+String(IdServoMoteur_)+String("]:"));
 #   define COURBE Serial.print("\v Toto:")
@@ -11,8 +11,8 @@
 #else
 #   define DBHEADER {}
 #   define DBPRINT(a,b) {}
-#   define DBPRINT1LN(a,b) {}
-#   define DBPRINTLN(a,b,FORMAT) {}
+#   define DBPRINT1LN(a) {}
+#   define DBPRINTLN(a,b) {}
 #endif
 
 #define PIN_DEBUG  LED_BLUE // BLUE LED
