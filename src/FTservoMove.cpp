@@ -125,7 +125,7 @@ void FTServoMove::init(int32_t Vitesse, uint32_t Acceleration, uint32_t NbPasDec
     servo_->setOperationMode(IdServoMoteur_ , STS::mode::CONTINUOUS); delay(1);
     servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
     servo_->setTargetVelocity(IdServoMoteur_, 0, false);
-    callbackManager(this);
+    //callbackManager(this);
     DBPRINT1LN("init::initialisation terminée.");
 }
 
@@ -308,10 +308,12 @@ void FTServoMove::Avance_Recule_callback() {
             //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
             //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
             NbPasAbsolu_ += NbPasTarget_;
+            delay(1);
             //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position absolue: ", (int) NbPasAbsolu_);
             if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 1){
             DBPRINTLN("Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
             }
+            delay(1);
             stop();
             }
           }
