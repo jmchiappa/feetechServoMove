@@ -11,13 +11,6 @@
 
 #include "Arduino.h"
 #include <STSServoDriver.h>
-#include "stm32wbxx_hal_lptim.h"
-#include "stm32wbxx_ll_lptim.h"
-
-
-#define POLLING_DELAY   10 // ms
-
-#define LPTIM_INSTANCE    LPTIM1
 
 class FTServoMove
 {
@@ -55,10 +48,8 @@ class FTServoMove
             NbPasDeceleration_= 1050;
             NbPasAbsolu_ = 0;
             NbTourAbsolu_ = 0;
+            Position_Finale_ = 0;
         }
-
-        static void callbackManager(FTServoMove *servo);
-        // static void callback(void);
 
         /// \brief 
         /// Met le moteur en mode “continue”
@@ -81,7 +72,9 @@ class FTServoMove
         
         bool estIlEnRoute(void);
         
-        void parcoursCetteDistance (int32_t NbPas);
+        void parcoursCetteDistance (int32_t NbPas, int32_t Vitesse, int32_t Acceleration);
+        void parcoursCetteDistance_Position_Go(void);
+        int32_t getDistanceParcourue(void);
 
         void Avance_Recule_callback(void);
 
@@ -94,7 +87,7 @@ class FTServoMove
         uint8_t getId(void) { return IdServoMoteur_; }
     private:
 
-        void Avance_Recule_PetitDistance(int32_t NbPas);
+        void Avance_Recule_PetitDistance (int32_t NbPas, int32_t Vitesse, int32_t Acceleration);
 
         STSServoDriver *servo_;
         uint8_t IdServoMoteur_ = 0x00;
@@ -112,5 +105,6 @@ class FTServoMove
         uint8_t NbItDemarageMode_;
         int32_t NbPasAbsolu_;
         int32_t NbTourAbsolu_;
+        int32_t Position_Finale_;
 };
 #endif
