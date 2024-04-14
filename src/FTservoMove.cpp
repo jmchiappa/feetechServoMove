@@ -2,12 +2,12 @@
 
 #define DBG
 #if defined(DBG)
-#   define DBHEADER Serial.print(String("FTServoMove[")+String(IdServoMoteur_)+String("]:"));
-#   define COURBE Serial.print("\v Toto:")
+#   define DBHEADER {Serial.print("FTServoMove[");Serial.print(IdServoMoteur_);Serial.print("]:");}
+#   define COURBE Serial.print("\v Toto:")  
 #   define DBPRINT(a,b) {DBHEADER;Serial.print(a);Serial.print(":");Serial.print(b);}
-#   define DBPRINT1LN(a) DBHEADER;Serial.println(a);
-#   define DBPRINTLN(a,b) DBHEADER;Serial.print(a);Serial.print(":");Serial.println(b,DEC);
-#   define COURBEPRINTLN(a) COURBE;Serial.println(a,DEC);
+#   define DBPRINT1LN(a) {DBHEADER;Serial.println(a);}
+#   define DBPRINTLN(a,b) {DBHEADER;Serial.print(a);Serial.print(":");Serial.println(b,DEC);}
+#   define COURBEPRINTLN(a) {COURBE;Serial.println(a,DEC);}
 #else
 #   define DBHEADER {}
 #   define COURBE  {}
@@ -66,7 +66,7 @@ void FTServoMove::calageStart (int32_t vitesseCalage) {
 }
 
 void FTServoMove::stop(void) {
-    DBPRINT1LN("stop::stop.");
+    //DBPRINT1LN("stop::stop.");
     servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
     servo_->setTargetVelocity(IdServoMoteur_, 0, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_STOP;
@@ -111,7 +111,11 @@ void FTServoMove::parcoursCetteDistance (int32_t NbPas, int32_t Vitesse, int32_t
   int X_DeDepart;
 
   if (abs(NbPas) <= STS::parameter::VALEUR_MAX_PETITE_DISTANCE) {
-    Avance_Recule_PetitDistance( NbPas, Vitesse, Acceleration);
+    //DBPRINTLN("::::::::::::: Parcours Petite distance",IdServoMoteur_);
+    if (abs(NbPas) > 5)
+    {
+      Avance_Recule_PetitDistance( NbPas, Vitesse, Acceleration);
+    }
   } else {
     DBPRINTLN("::::::::::::: Parcours Grand distance",IdServoMoteur_);
     X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_); delay(1);
@@ -168,10 +172,12 @@ void FTServoMove::parcoursCetteDistance (int32_t NbPas, int32_t Vitesse, int32_t
 
 void FTServoMove::Avance_Recule_PetitDistance (int32_t NbPas, int32_t Vitesse, int32_t Acceleration) {
   int X_DeDepart;
+  int NbMaxLecture;
 
   X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);delay(1);
   if (X_DeDepart == 0) X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_); delay (1);
-  DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart sdqsdsd= ",(int) X_DeDepart);
+  //DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart = ",(int) X_DeDepart);
+  //DBPRINTLN("Avance_Recule_PetitDistance : Distance = ",(int) NbPas);
   if ((X_DeDepart < 100) || (X_DeDepart > 4000)) {
     servo_->setPositionCorrection(IdServoMoteur_, 200, false); delay(1);
   }
@@ -181,10 +187,16 @@ void FTServoMove::Avance_Recule_PetitDistance (int32_t NbPas, int32_t Vitesse, i
   servo_->setOperationMode(IdServoMoteur_, STS::mode::POSITION); delay(1);
   servo_->setTargetAcceleration(IdServoMoteur_, Acceleration, false); delay(1);
   servo_->setTargetVelocity(IdServoMoteur_, Vitesse, false); delay(1);
-  X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_);delay(1);
-  DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart = ",(int) X_DeDepart);  
+  X_DeDepart = 0;
+  NbMaxLecture = 40;
+  while ((X_DeDepart == 0) && (NbMaxLecture != 0))
+  {
+    X_DeDepart = servo_->getCurrentPosition(IdServoMoteur_); delay(1);
+    NbMaxLecture--;
+  }
+  DBPRINTLN("::::::::::::: Parcours Petit distance",NbPas);
+  //DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart = ",(int) X_DeDepart);  
   //DBPRINTLN("Avance_Recule_PetitDistance : NbPas",(int) NbPas);   
-  //DBPRINTLN("Avance_Recule_PetitDistance : X_DeDepart",(int) X_DeDepart);   
   Position_Finale_ = X_DeDepart + NbPas;
   NbPasTarget_ = NbPas;
 
@@ -204,76 +216,82 @@ void FTServoMove::Avance_Recule_PetitDistance (int32_t NbPas, int32_t Vitesse, i
   // NbTours_Parcourus_ = 0;
   EtatMoteur_ = ETAT_MOTEUR_DEMARAGE_POSITION;
   //servo_->setTargetPosition(IdServoMoteur_, Position_Finale_, false);
-  getDistanceParcourue();
+  //getDistanceParcourue();
 }
 
 void FTServoMove::parcoursCetteDistance_Position_Go(){
   servo_->setTargetPosition(IdServoMoteur_, Position_Finale_, false);
 }
+
 int32_t FTServoMove::getDistanceParcourue(){
   int v_it_PositionMoteurCourante = 0;
   int NbMaxLecture;
 
-  NbMaxLecture = 20;
-  while ((v_it_PositionMoteurCourante == 0) || (NbMaxLecture != 0))
+  NbMaxLecture = 40;
+  while ((v_it_PositionMoteurCourante == 0) && (NbMaxLecture != 0))
   {
     v_it_PositionMoteurCourante = servo_->getCurrentPosition(IdServoMoteur_); delay(1);
     NbMaxLecture--;
   }
   if (Avance_Recule_ == ROBOT_AVANCE) {
+    //DBPRINTLN("getDistanceParcourue_AVANCE : PositionMoteur_Courante_ = ",(int) PositionMoteur_Courante_);  
     if (v_it_PositionMoteurCourante < PositionMoteur_Courante_){
-      if ((PositionMoteur_Courante_ - v_it_PositionMoteurCourante) > 2)
+      if ((PositionMoteur_Courante_ - v_it_PositionMoteurCourante) > 10)
         NbPasAbsolu_ += (4096 - PositionMoteur_Courante_) + v_it_PositionMoteurCourante;
     } else {
       NbPasAbsolu_ += v_it_PositionMoteurCourante - PositionMoteur_Courante_;
     }
+    //DBPRINTLN("getDistanceParcourue_AVANCE : v_it_PositionMoteurCourante = ",(int) v_it_PositionMoteurCourante); 
   } else { // On recule...
+    //DBPRINTLN("getDistanceParcourue_RECULE : PositionMoteur_Courante_ = ",(int) PositionMoteur_Courante_);  
     if (v_it_PositionMoteurCourante > PositionMoteur_Courante_){
-      if ((v_it_PositionMoteurCourante - PositionMoteur_Courante_) > 2)
+      if ((v_it_PositionMoteurCourante - PositionMoteur_Courante_) > 10)
         NbPasAbsolu_ += - PositionMoteur_Courante_ - (4096 - v_it_PositionMoteurCourante);
     } else {
       NbPasAbsolu_ += v_it_PositionMoteurCourante - PositionMoteur_Courante_;
       }
+    //DBPRINTLN("getDistanceParcourue_RECULE : v_it_PositionMoteurCourante = ",(int) v_it_PositionMoteurCourante); 
   }
   PositionMoteur_Courante_ = v_it_PositionMoteurCourante;
-  DBPRINTLN("getDistanceParcourue: ", (int) NbPasAbsolu_);
+  //DBPRINTLN("getDistanceParcourue: ", (int) NbPasAbsolu_);
   return (NbPasAbsolu_);
 }
 
 void FTServoMove::Avance_Recule_callback() {
   //DBPRINT1LN(F("entering in IT callback"));
   int v_it_PositionMoteurCourante;
+  int NbMaxLecture;
  
   if (EtatMoteur_ != ETAT_MOTEUR_STOP) {
     if (EtatMoteur_ == ETAT_MOTEUR_DEMARAGE_POSITION) {
       NbItDemarageMode_ ++;
-      getDistanceParcourue();
+      //getDistanceParcourue();
       if (NbItDemarageMode_ >= STS::parameter::NB_IT_DEMARRAGE){
-        // Le moteur doit maintenant être lancé - Message d'erreur sinon
-        EtatMoteur_ = ETAT_MOTEUR_POSITION;
-        // if (servo_->isMoving(IdServoMoteur_) == 0) {
-        //     DBPRINTLN("ETAT_MOTEUR_DEMARAGE_POSITION : Le moteur n'a pas démarré !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",servo_->getCurrentPosition(IdServoMoteur_));
-        // }
+      //   // Le moteur doit maintenant être lancé - Message d'erreur sinon
+         EtatMoteur_ = ETAT_MOTEUR_POSITION;
+      //   if (servo_->isMoving(IdServoMoteur_) == 0) {
+      //        DBPRINTLN("ETAT_MOTEUR_DEMARAGE_POSITION : Le moteur n'a pas démarré !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",servo_->getCurrentPosition(IdServoMoteur_));
+      //   }
       }
     } else {
       if (EtatMoteur_== ETAT_MOTEUR_POSITION) {
-        if (servo_->isMoving(IdServoMoteur_) == 0) {
-          DBPRINTLN("Avance_Recul_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
-          DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
-          delay(1);
-          if (servo_->isMoving(IdServoMoteur_) == 0) {
-            //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
-            //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
-            delay(1);
-            DBPRINTLN("Avance_Recule_callback - Fin Mode position - Nb Pas demandé: ", (int) NbPasTarget_);
-            getDistanceParcourue();
-            if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 1){
-            DBPRINTLN("Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
-            }
-            delay(1);
-            stop();
-          }
+        NbMaxLecture = 10;
+        while ((servo_->isMoving(IdServoMoteur_) == 0) && (NbMaxLecture != 0))
+        {
+          NbMaxLecture--; delay(10);
         }
+        if (NbMaxLecture == 0) {
+          //DBPRINTLN("Avance_Recul_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
+          //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
+          if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 10){
+            DBPRINTLN("!!!!!!!!!!! Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
+          }
+          //getDistanceParcourue();
+          DBPRINTLN("-------------getDistanceParcourue = ",(int) getDistanceParcourue());
+
+          stop();
+
+          }
         else{
           //Still running - Count NbTour in case of emergency stop
           getDistanceParcourue();
