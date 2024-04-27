@@ -1,6 +1,6 @@
 #include "FTservoMove.h"
 
-#define DBG
+//#define DBG
 #if defined(DBG)
 #   define DBHEADER {Serial.print("FTServoMove[");Serial.print(IdServoMoteur_);Serial.print("]:");}
 #   define COURBE Serial.print("\v Toto:")  
@@ -283,9 +283,9 @@ void FTServoMove::Avance_Recule_callback() {
         if (NbMaxLecture == 0) {
           //DBPRINTLN("Avance_Recul_callback - Fin Mode position - Position reel    : ",servo_->getCurrentPosition(IdServoMoteur_));
           //DBPRINTLN("Avance_Recule_callback - Fin Mode position - Position attendue: ",(int) PositionMoteur_Target_Finale_);
-          if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 10){
-            DBPRINTLN("!!!!!!!!!!! Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
-          }
+          // if (abs ((int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_)) > 10){
+          //   DBPRINTLN("!!!!!!!!!!! Avance_Recule_callback - Delta Position Commande = ",(int) (servo_->getCurrentPosition(IdServoMoteur_) - PositionMoteur_Target_Finale_));
+          // }
           //getDistanceParcourue();
           DBPRINTLN("-------------getDistanceParcourue = ",(int) getDistanceParcourue());
 
