@@ -71,7 +71,7 @@ class FTServoMove
         void stop(void);
         
         bool estIlEnRoute(void);
-        
+        void parcoursCetteDistance (int32_t NbPas);
         void parcoursCetteDistance (int32_t NbPas, int32_t Vitesse, int32_t Acceleration);
         void parcoursCetteDistance_Position_Go(void);
         int32_t getDistanceParcourue(void);
@@ -106,5 +106,6 @@ class FTServoMove
         int32_t NbPasAbsolu_;
         int32_t NbTourAbsolu_;
         int32_t Position_Finale_;
+        uint8_t CallBack_NbLecture_;
 };
 #endif
