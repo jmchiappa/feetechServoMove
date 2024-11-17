@@ -1,6 +1,6 @@
 #include "FTservoMove.h"
 
-#define DBG
+// #define DBG
 #if defined(DBG)
 #   define DBHEADER {Serial.print("FTServoMove[");Serial.print(IdServoMoteur_);Serial.print("]:");}
 #   define COURBE Serial.print("\v Toto:")  
