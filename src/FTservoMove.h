@@ -85,6 +85,9 @@ class FTServoMove
         int32_t get_PositionAbsolue(void);
 
         uint8_t getId(void) { return IdServoMoteur_; }
+
+        int32_t vitesse(void) { return VitesseNominale_; }
+        int32_t acceleration(void) { return Acceleration_; };
     private:
 
         void Avance_Recule_PetitDistance (int32_t NbPas, int32_t Vitesse, int32_t Acceleration);
