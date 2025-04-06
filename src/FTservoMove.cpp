@@ -27,6 +27,21 @@ namespace STS::parameter {
  * static C functions
  * 
  **/ 
+void FTServoMove:: SetMode3 (void) {
+  servo_->setOperationMode(IdServoMoteur_,3); delay(1);
+  servo_->writeTwoBytesRegister(IdServoMoteur_,0x9,0,false); delay(1);
+  servo_->writeTwoBytesRegister(IdServoMoteur_,0xB,0,false); delay(1);
+}
+void FTServoMove::New_AvanceDe (int32_t NbPas){
+  
+
+  servo_->setTargetVelocity(IdServoMoteur_,10000); delay(1);
+    servo_->setTargetAcceleration(IdServoMoteur_, 100, false); delay(1);
+  servo_->setTargetPosition(IdServoMoteur_,NbPas,false);
+}
+int32_t FTServoMove::Read_AvanceDe(void){  
+  return(servo_->readTwoBytesRegister(IdServoMoteur_,0x38));
+}
 
 void FTServoMove::init(int32_t Vitesse, uint32_t Acceleration, uint32_t NbPasDeceleration)
 {
@@ -34,11 +49,13 @@ void FTServoMove::init(int32_t Vitesse, uint32_t Acceleration, uint32_t NbPasDec
     Acceleration_ = Acceleration;
     NbPasDeceleration_ = NbPasDeceleration;
     EtatMoteur_ = ETAT_MOTEUR_STOP;
-    servo_->writeTwoBytesRegister(IdServoMoteur_, STS::registers::MINIMUM_ANGLE, 32766, false);
-    servo_->writeTwoBytesRegister(IdServoMoteur_, STS::registers::MAXIMUM_ANGLE, 32766, false);
-    servo_->setOperationMode(IdServoMoteur_ , STS::mode::CONTINUOUS); delay(1);
+
+    servo_->setOperationMode(IdServoMoteur_ , STS::mode::CONTINUOUS); delay(100);
+    //servo_->setTargetVelocity(IdServoMoteur_, 0, false);
+    //servo_->writeTwoBytesRegister(IdServoMoteur_, STS::registers::MINIMUM_ANGLE, 0, false);
+    //servo_->writeTwoBytesRegister(IdServoMoteur_, STS::registers::MAXIMUM_ANGLE, 4096, false);
     servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_, false); delay(1);
-    servo_->setTargetVelocity(IdServoMoteur_, 0, false);
+    servo_->setTargetVelocity(IdServoMoteur_, 0, false);  
     DBPRINT1LN("init::initialisation terminée.");
 }
 
@@ -61,7 +78,8 @@ void FTServoMove::changeSpeed (int32_t vitesseNouvelle) {
 
 void FTServoMove::calageStart (int32_t vitesseCalage) {
     DBPRINT1LN("calageStart::Début calage...");
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    //servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(100);
+    //servo_->setTargetVelocity(IdServoMoteur_, 0, false); delay(1);
     servo_->setTargetAcceleration(IdServoMoteur_, Acceleration_,false); delay(1);
     servo_->setTargetVelocity(IdServoMoteur_, vitesseCalage, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_CALAGE;
@@ -69,8 +87,9 @@ void FTServoMove::calageStart (int32_t vitesseCalage) {
 
 void FTServoMove::stop(void) {
     //DBPRINT1LN("stop::stop.");
-    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS); delay(1);
+    servo_->setOperationMode(IdServoMoteur_, STS::mode::CONTINUOUS);
     servo_->setTargetVelocity(IdServoMoteur_, 0, false); delay(1);
+    //servo_->setTargetAcceleration(IdServoMoteur_, 0, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_STOP;
 }
 

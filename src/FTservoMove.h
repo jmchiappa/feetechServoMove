@@ -66,6 +66,12 @@ class FTServoMove
 
         void changeSpeed (int32_t vitesseNouvelle);
 
+        void New_AvanceDe(int32_t NbPas);
+
+        void SetMode3(void);
+
+        int32_t Read_AvanceDe(void);
+
         uint32_t PositionCourante(void);
         
         void stop(void);
@@ -110,5 +116,6 @@ class FTServoMove
         int32_t NbTourAbsolu_;
         int32_t Position_Finale_;
         uint8_t CallBack_NbLecture_;
+
 };
 #endif
