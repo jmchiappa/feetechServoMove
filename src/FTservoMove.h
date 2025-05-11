@@ -89,6 +89,8 @@ class FTServoMove
         void reset_PositionAbsolue(void);
 
         int32_t get_PositionAbsolue(void);
+        
+        bool Bouge(void);
 
         uint8_t getId(void) { return IdServoMoteur_; }
 

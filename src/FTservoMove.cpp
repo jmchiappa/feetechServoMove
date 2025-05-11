@@ -92,6 +92,10 @@ void FTServoMove::stop(void) {
     //servo_->setTargetAcceleration(IdServoMoteur_, 0, false); delay(1);
     EtatMoteur_ = ETAT_MOTEUR_STOP;
 }
+bool FTServoMove::Bouge(void) {
+  return(servo_->isMoving(IdServoMoteur_));
+
+}
 
 void FTServoMove::Affinage_Deceleration(void) {
   int Position1;
